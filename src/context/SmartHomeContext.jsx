@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { iotBridge } from '../services/iotBridgeService';
 
 const SmartHomeContext = createContext();
 
@@ -97,11 +98,37 @@ export const SmartHomeProvider = ({ children }) => {
 
   const [activeScene, setActiveScene] = useState('scene-home');
   const [isSimulating, setIsSimulating] = useState(true);
+  const [hardwareStatus, setHardwareStatus] = useState('DISCONNECTED');
   const [logs, setLogs] = useState([
     { id: 1, time: '14:38:12', text: 'Hệ thống khởi động thành công', type: 'info' },
     { id: 2, time: '14:35:00', text: 'Nhiệt độ phòng khách duy trì ổn định ở 26.4°C', type: 'success' },
     { id: 3, time: '14:30:22', text: 'Cửa chính xác thực vân tay Admin thành công', type: 'security' },
   ]);
+
+  // Lắng nghe gói tin từ kết nối phần cứng ESP32 thực tế
+  useEffect(() => {
+    const unsubscribe = iotBridge.subscribe((event, data) => {
+      if (event === 'status_change') {
+        setHardwareStatus(data.status);
+      } else if (event === 'packet_rx') {
+        if (data.type === 'TELEMETRY' && data.temp) {
+          setSensors((prev) => ({
+            ...prev,
+            livingRoom: {
+              ...prev.livingRoom,
+              temp: data.temp,
+              hum: data.hum,
+            },
+          }));
+          addLog(`Nhận cảm biến từ ESP32 thực tế: ${data.temp}°C, ${data.hum}%`, 'success');
+        }
+      } else if (event === 'log') {
+        addLog(data.text, data.type);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Persist to localStorage
   useEffect(() => {
