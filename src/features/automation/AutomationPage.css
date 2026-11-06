@@ -1,0 +1,73 @@
+.automation-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.automation-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn-add-rule {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: #0b0f19;
+  font-size: 0.875rem;
+  font-weight: 700;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
+  transition: all var(--transition-fast);
+}
+
+.btn-add-rule:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.scenes-section,
+.rules-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.section-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.title-icon {
+  color: var(--primary);
+}
+
+.section-title-wrap h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.section-title-wrap p {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.scenes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+

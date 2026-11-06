@@ -1,0 +1,140 @@
+.quick-controls-wrapper {
+  padding: 1.5rem;
+}
+
+.quick-controls-header {
+  margin-bottom: 1.25rem;
+}
+
+.quick-controls-header h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.quick-controls-header p {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.quick-buttons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.quick-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 120px;
+  transition: all var(--transition-normal);
+}
+
+.quick-card.clickable {
+  cursor: pointer;
+}
+
+.quick-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.quick-card.active {
+  background: rgba(56, 189, 248, 0.08);
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.quick-card.locked {
+  background: rgba(16, 185, 129, 0.06);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.quick-card.unlocked {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.quick-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.quick-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+}
+
+.quick-card.active .light-icon {
+  background: rgba(254, 240, 138, 0.2);
+  color: #fef08a;
+  box-shadow: 0 0 15px rgba(254, 240, 138, 0.4);
+}
+
+.quick-card.active .ac-icon {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+}
+
+.quick-card.active .fan-icon {
+  background: rgba(6, 182, 212, 0.2);
+  color: #06b6d4;
+}
+
+.fan-rotating {
+  animation: fanSpin 1.2s infinite linear;
+}
+
+@keyframes fanSpin {
+  100% { transform: rotate(360deg); }
+}
+
+.lock-chip {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+}
+
+.chip-locked {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.chip-open {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.quick-card-info h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quick-status {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+  display: block;
+}
+

@@ -1,0 +1,211 @@
+.floor-map-card {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.floor-map-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.floor-map-header h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.floor-map-header p {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.map-legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.legend-dot.on {
+  background-color: #fef08a;
+  box-shadow: 0 0 8px #fef08a;
+}
+.legend-dot.off {
+  background-color: #475569;
+}
+
+.floor-canvas-container {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 420px;
+  background: radial-gradient(circle at center, #111a2e 0%, #090d16 100%);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8);
+}
+
+/* Blueprint Grid Background Pattern */
+.blueprint-grid {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-size: 24px 24px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+.room-zone-block {
+  position: absolute;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  backdrop-filter: blur(4px);
+}
+
+.room-zone-block:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--accent);
+  box-shadow: 0 0 20px -5px var(--accent);
+}
+
+.room-zone-block.selected {
+  background: rgba(56, 189, 248, 0.08);
+  border-color: #38bdf8;
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.35);
+}
+
+.zone-info-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.zone-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.zone-area-tag {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+.zone-sensor-badges {
+  display: flex;
+  gap: 8px;
+  margin: 6px 0;
+  flex-wrap: wrap;
+}
+
+.zone-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border-subtle);
+}
+
+.zone-badge.temp {
+  color: #fb7185;
+}
+.zone-badge.hum {
+  color: #38bdf8;
+}
+
+.zone-devices-layer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.light-nodes-wrap {
+  display: flex;
+  gap: 6px;
+}
+
+.map-light-node {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.6);
+  color: #64748b;
+  transition: all var(--transition-fast);
+}
+
+.map-light-node.node-on {
+  color: var(--bulb-color);
+  background: rgba(254, 240, 138, 0.2);
+  border-color: var(--bulb-color);
+  box-shadow: 0 0 10px var(--bulb-color);
+}
+
+.map-light-node:hover {
+  transform: scale(1.15);
+}
+
+.map-badge-ac {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.spin-slow {
+  animation: acSpin 3s infinite linear;
+}
+
+@keyframes acSpin {
+  100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .floor-canvas-container {
+    aspect-ratio: auto;
+    height: 480px;
+  }
+}
+

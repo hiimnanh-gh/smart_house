@@ -1,0 +1,61 @@
+.iot-debug-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.iot-debug-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.mcu-specs-banner {
+  padding: 1.25rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+
+.spec-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.spec-icon.esp { color: #8b5cf6; }
+.spec-icon.wifi { color: #10b981; }
+.spec-icon.heap { color: #38bdf8; }
+
+.spec-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.spec-lbl {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.spec-val {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.spec-divider {
+  width: 1px;
+  height: 40px;
+  background: var(--border-subtle);
+}
+
+@media (max-width: 768px) {
+  .spec-divider {
+    display: none;
+  }
+}
+

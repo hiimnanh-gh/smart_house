@@ -1,0 +1,99 @@
+.spline-chart-card {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chart-head h4 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.chart-head p {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.metric-tabs {
+  display: flex;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.metric-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+}
+
+.metric-tab:hover {
+  color: var(--text-main);
+}
+
+.metric-tab.active.temp {
+  background: rgba(244, 63, 94, 0.2);
+  color: #fb7185;
+}
+
+.metric-tab.active.hum {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+}
+
+.metric-tab.active.power {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+.svg-container {
+  width: 100%;
+  position: relative;
+}
+
+.responsive-svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.chart-tooltip {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  font-size: 0.8rem;
+}
+
+.tooltip-time {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+.tooltip-val {
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+

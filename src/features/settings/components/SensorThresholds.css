@@ -1,0 +1,73 @@
+.thresholds-card {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.th-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.th-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.th-icon {
+  color: #f59e0b;
+}
+
+.th-title h4 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.th-title p {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.th-sliders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.th-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.th-note {
+  font-size: 0.8rem;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.btn-save-thresholds {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: #0b0f19;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  transition: all var(--transition-fast);
+}
+
+.btn-save-thresholds:hover {
+  background: var(--primary-hover);
+}
+

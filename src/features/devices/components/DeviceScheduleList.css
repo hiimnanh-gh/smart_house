@@ -1,0 +1,85 @@
+.schedules-box {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.schedules-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.schedules-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.clock-icon {
+  color: #38bdf8;
+}
+
+.schedules-title-wrap h4 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.schedules-title-wrap p {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.schedules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.schedule-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.schedule-entry:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.entry-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.entry-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.entry-target {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.entry-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.entry-time {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+

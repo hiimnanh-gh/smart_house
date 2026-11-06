@@ -1,0 +1,210 @@
+.power-flow-card {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.flow-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.flow-card-header h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.flow-card-header p {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.flow-diagram-canvas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 0;
+  position: relative;
+}
+
+.flow-node {
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  z-index: 2;
+  transition: transform var(--transition-fast);
+}
+
+.flow-node:hover {
+  transform: scale(1.03);
+}
+
+.flow-node.solar {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.08);
+}
+.sun-icon-spin {
+  color: #f59e0b;
+}
+
+.flow-node.battery {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.08);
+}
+.battery-icon {
+  color: #10b981;
+}
+
+.flow-node.inverter-center {
+  padding: 18px 24px;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%);
+  border: 2px solid #38bdf8;
+  box-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
+}
+
+.inverter-core {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.zap-pulse {
+  color: #38bdf8;
+  animation: pulse-dot 1.5s infinite;
+}
+
+.inverter-text {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.flow-node.grid {
+  border-color: rgba(139, 92, 246, 0.4);
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.flow-node.home {
+  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(56, 189, 248, 0.08);
+}
+.home-icon {
+  color: #38bdf8;
+}
+
+.node-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.node-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.node-power {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.node-power.highlight {
+  color: #38bdf8;
+}
+
+.middle-flow-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 680px;
+  position: relative;
+  margin: 1.5rem 0;
+  gap: 20px;
+}
+
+/* Pipes & Flowing Particles */
+.energy-pipe {
+  position: relative;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.pipe-down,
+.pipe-down-home {
+  width: 4px;
+  height: 40px;
+  margin: 0 auto;
+}
+
+.pipe-right,
+.pipe-left {
+  flex: 1;
+  height: 4px;
+}
+
+.energy-particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #38bdf8;
+  box-shadow: 0 0 10px #38bdf8;
+}
+
+.particle-down {
+  left: -2px;
+  animation: moveDown 1.5s infinite linear;
+}
+
+.particle-right {
+  top: -2px;
+  animation: moveRight 1.5s infinite linear;
+}
+
+.particle-left {
+  top: -2px;
+  animation: moveLeft 1.5s infinite linear;
+}
+
+@keyframes moveDown {
+  0% { top: 0%; opacity: 0; }
+  50% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+@keyframes moveRight {
+  0% { left: 0%; opacity: 0; }
+  50% { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+
+@keyframes moveLeft {
+  0% { right: 0%; opacity: 0; }
+  50% { opacity: 1; }
+  100% { right: 100%; opacity: 0; }
+}
+
+@media (max-width: 768px) {
+  .middle-flow-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .pipe-right, .pipe-left {
+    display: none;
+  }
+}
+

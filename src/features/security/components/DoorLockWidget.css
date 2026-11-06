@@ -1,0 +1,147 @@
+.door-locks-section {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.locks-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.locks-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.locks-icon {
+  color: #10b981;
+}
+
+.locks-title h4 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.locks-title p {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.locks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.lock-card {
+  padding: 1.25rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  transition: all var(--transition-fast);
+}
+
+.lock-card.locked {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.04);
+}
+
+.lock-card.unlocked {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.lock-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lock-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.lock-card.locked .lock-icon-circle {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.lock-card.unlocked .lock-icon-circle {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.battery-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+.door-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.door-location {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: block;
+}
+
+.last-unlock-info {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  display: block;
+  margin-top: 4px;
+}
+
+.btn-toggle-lock {
+  width: 100%;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  transition: all var(--transition-fast);
+}
+
+.btn-unlock {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+}
+
+.btn-unlock:hover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: #f59e0b;
+  color: #fbbf24;
+}
+
+.btn-lock {
+  background: #10b981;
+  color: #0b0f19;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.35);
+}
+
+.btn-lock:hover {
+  background: #059669;
+}
+

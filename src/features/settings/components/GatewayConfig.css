@@ -1,0 +1,130 @@
+.gateway-config-card {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.gw-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gw-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gw-icon {
+  color: var(--primary);
+}
+
+.gw-title h4 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.gw-title p {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.gw-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.gw-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gw-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.gw-input {
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.gw-input:focus {
+  border-color: var(--primary);
+}
+
+.gw-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ping-result-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.825rem;
+  font-weight: 600;
+}
+
+.ping-result-box.success {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34d399;
+}
+
+.gw-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.uptime-text {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+.btn-test-ping {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  transition: all var(--transition-fast);
+}
+
+.btn-test-ping:hover:not(:disabled) {
+  background: rgba(56, 189, 248, 0.25);
+}
+
+.spinning {
+  animation: spinPing 1s infinite linear;
+}
+
+@keyframes spinPing {
+  100% { transform: rotate(360deg); }
+}
+

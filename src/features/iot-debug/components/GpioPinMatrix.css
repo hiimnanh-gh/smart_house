@@ -1,0 +1,125 @@
+.gpio-matrix-card {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.gpio-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.head-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chip-icon {
+  color: var(--primary);
+}
+
+.head-left h4 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.head-left p {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.chip-badge {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #a78bfa;
+  background: rgba(139, 92, 246, 0.15);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.pins-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.pin-node-box {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all var(--transition-fast);
+}
+
+.pin-node-box.interactive {
+  cursor: pointer;
+}
+
+.pin-node-box.interactive:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.pin-node-box.state-high {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.04);
+}
+
+.pin-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pin-num {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.pin-level-badge {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.pin-level-badge.high {
+  background: #10b981;
+  color: #0b0f19;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+.pin-level-badge.low {
+  background: #334155;
+  color: #94a3b8;
+}
+
+.pin-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.pin-alias {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.pin-mode-tag {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+}
+
