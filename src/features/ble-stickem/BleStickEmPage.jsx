@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Bluetooth,
   BluetoothConnected,
@@ -10,211 +10,247 @@ import {
   Cpu,
   Hand,
   Ruler,
-  Activity,
-  Pause,
-  Play,
-  Code2,
-} from 'lucide-react';
-import { useSmartHome } from '../../context/SmartHomeContext';
-import { StatusBadge } from '../../components/common/StatusBadge';
-import { sound } from '../../utils/soundEffects';
-import {
-  BLE_CONFIG,
-  decodeBleDataView,
-  isWebBluetoothSupported,
-  parseStickEmPayload,
-} from './bleStickEmService';
-import './BleStickEmPage.css';
+  Thermometer,
+  Droplets,
+  Sun,
+  Cog,
+  Minus,
+  Plus,
+  Send,
+  Zap,
+} from "lucide-react";
+import { useSmartHome } from "../../context/SmartHomeContext";
+import { ToggleSwitch } from "../../components/common/ToggleSwitch";
+import { RangeSlider } from "../../components/common/RangeSlider";
+import { EightPortControlGrid } from "./components/EightPortControlGrid";
+import { StickEmMotionPad } from "./components/StickEmMotionPad";
+import { sound } from "../../utils/soundEffects";
+import { isWebBluetoothSupported, useBleStickEm } from "./bleStickEmService";
+import "./BleStickEmPage.css";
+
+const SERVO_PRESETS = [0, 45, 90, 135, 180];
 
 export const BleStickEmPage = () => {
   const { addLog } = useSmartHome();
+  const {
+    status,
+    connectionState,
+    deviceInfo,
+    canWrite,
+    writeCharUuid,
+    writeMode,
+    gattCharacteristics,
+    servoAngle,
+    servoFormat,
+    servoChannel,
+    appendNewlineOnWrite,
+    eightPorts,
+    detectedModules,
+    portCommandFormat,
+    selectedPortNum,
+    probingPortNum,
+    isProbingPort,
+    lastScanTime,
+    speedLevel,
+    snapBack,
+    driveConfig,
+    activeDriveAction,
+    portsData,
+    parsedPayload,
+    rawData,
+    unparsedRawText,
+    hexData,
+    terminalLogs,
+    syncToDashboard,
+    getWriteCharacteristic,
+    connectDevice,
+    disconnectDevice,
+    clearHistory,
+    setServoFormat,
+    setServoChannel,
+    setAppendNewlineOnWrite,
+    setWriteMode,
+    setActiveWriteCharacteristic,
+    setSelectedPortNum,
+    setPortCommandFormat,
+    setPortMode,
+    setSpeedLevel,
+    setSnapBack,
+    setDriveConfig,
+    setServoAngleLocal,
+    setSyncToDashboard,
+    sendServoCommand: dispatchServoWrite,
+    probeServoFormats,
+    scanPluggedPorts,
+    autoDetectActivePort,
+    confirmDetectedPort,
+    sendPortCommand,
+    rotatePort,
+    driveRobot,
+    stopAllPorts,
+    probePortFormats,
+    stopPortProbe,
+    sendTextCommand,
+  } = useBleStickEm();
 
-  const [status, setStatus] = useState('Chưa kết nối');
-  const [connectionState, setConnectionState] = useState('inactive'); // 'inactive' | 'warning' | 'active' | 'danger'
-  const [deviceInfo, setDeviceInfo] = useState(null);
-  const [parsedPayload, setParsedPayload] = useState(null);
-  const [rawData, setRawData] = useState('');
-  const [hexData, setHexData] = useState('');
-  const [dataHistory, setDataHistory] = useState([]);
-  const [activeTab, setActiveTab] = useState('log'); // 'log' | 'raw'
-  const [isLogPaused, setIsLogPaused] = useState(false);
+  // Lưu instance Write Characteristic (0xFFE1) vào useRef để gửi lệnh tức thì
+  const writeCharRef = useRef(null);
+  const lastWriteTimeRef = useRef(0);
+  const trailingTimerRef = useRef(null);
+  const pendingAngleRef = useRef(null);
 
-  const deviceRef = useRef(null);
-  const charRef = useRef(null);
-  const rxBufferRef = useRef('');
-  const isLogPausedRef = useRef(false);
+  const [customCmd, setCustomCmd] = useState("mv:1850:-:-:-:-:-:-:-:-,");
 
+  // Đồng bộ writeCharRef với kết nối hiện tại và reset về null khi mất kết nối
   useEffect(() => {
-    isLogPausedRef.current = isLogPaused;
-  }, [isLogPaused]);
-
-  const applyDecodedPacket = (text, hexStr) => {
-    const parsed = parseStickEmPayload(text);
-    setRawData(text || hexStr);
-    setHexData(hexStr);
-    setParsedPayload(parsed);
-
-    if (!isLogPausedRef.current) {
-      setDataHistory((prev) => [
-        {
-          id: Date.now() + Math.random(),
-          time: new Date().toLocaleTimeString('vi-VN'),
-          summary: parsed.summaryText || text || hexStr,
-          isJson: parsed.isJson,
-        },
-        ...prev.slice(0, 29),
-      ]);
-    }
-  };
-
-  const handleCharacteristicChanged = (event) => {
-    const { text, hexStr } = decodeBleDataView(event.target.value);
-
-    // Xử lý gói tin JSON hoàn chỉnh hoặc bị phân mảnh qua BLE MTU
-    if (text.startsWith('{') && !text.endsWith('}')) {
-      rxBufferRef.current = text;
-      return;
-    }
-
-    if (rxBufferRef.current) {
-      const combined = rxBufferRef.current + text;
-      if (combined.endsWith('}') || combined.length > 512) {
-        rxBufferRef.current = '';
-        applyDecodedPacket(combined, hexStr);
-      } else {
-        rxBufferRef.current = combined;
+    if (connectionState === "active" && canWrite) {
+      writeCharRef.current = getWriteCharacteristic();
+    } else {
+      writeCharRef.current = null;
+      if (trailingTimerRef.current) {
+        clearTimeout(trailingTimerRef.current);
+        trailingTimerRef.current = null;
       }
-      return;
     }
-
-    applyDecodedPacket(text, hexStr);
-  };
-
-  const handleDisconnected = () => {
-    setStatus('Mất kết nối Bluetooth!');
-    setConnectionState('danger');
-    rxBufferRef.current = '';
-    addLog("Bluetooth Stick 'Em bị ngắt kết nối", 'warning');
-  };
+  }, [connectionState, canWrite, getWriteCharacteristic]);
 
   useEffect(() => {
     return () => {
-      if (charRef.current) {
-        charRef.current.removeEventListener(
-          'characteristicvaluechanged',
-          handleCharacteristicChanged
-        );
-      }
-      if (deviceRef.current) {
-        deviceRef.current.removeEventListener(
-          'gattserverdisconnected',
-          handleDisconnected
-        );
-        if (deviceRef.current.gatt?.connected) {
-          deviceRef.current.gatt.disconnect();
-        }
+      if (trailingTimerRef.current) {
+        clearTimeout(trailingTimerRef.current);
       }
     };
   }, []);
 
-  const connectDevice = async () => {
-    if (!isWebBluetoothSupported()) {
-      setStatus(
-        'Trình duyệt không hỗ trợ Web Bluetooth (hãy dùng Chrome/Edge trên HTTPS hoặc localhost).'
-      );
-      setConnectionState('danger');
-      return;
-    }
-
-    try {
-      sound.playClick();
-      setStatus('Đang tìm thiết bị...');
-      setConnectionState('warning');
-      rxBufferRef.current = '';
-
-      const device = await navigator.bluetooth.requestDevice({
-        filters: [
-          { services: [BLE_CONFIG.SERVICE_UUID] },
-        ],
-        // Khi đã đưa UUID vào filter 'services', không cần khai báo lại ở optionalServices
-      });
-
-      deviceRef.current = device;
-      setDeviceInfo({
-        name: device.name || 'Thiết bị BLE không tên',
-        id: device.id,
-      });
-
-      setStatus(`Đang kết nối tới ${device.name || 'thiết bị'}...`);
-      device.addEventListener('gattserverdisconnected', handleDisconnected);
-
-      const server = await device.gatt.connect();
-      const service = await server.getPrimaryService(BLE_CONFIG.SERVICE_UUID);
-      const characteristic = await service.getCharacteristic(BLE_CONFIG.NOTIFY_CHAR_UUID);
-      charRef.current = characteristic;
-
-      await characteristic.startNotifications();
-      characteristic.addEventListener(
-        'characteristicvaluechanged',
-        handleCharacteristicChanged
-      );
-
-      const connectedName = device.name || device.id;
-      setStatus(`Đã kết nối với ${connectedName}`);
-      setConnectionState('active');
-      sound.playSuccess();
-      addLog(`Đã kết nối BLE thành công tới ${connectedName}`, 'success');
-    } catch (err) {
-      setStatus(`Lỗi: ${err.message}`);
-      setConnectionState('danger');
-    }
-  };
-
-  const disconnectDevice = () => {
-    sound.playClick();
-    if (charRef.current) {
-      charRef.current.removeEventListener(
-        'characteristicvaluechanged',
-        handleCharacteristicChanged
-      );
-      charRef.current = null;
-    }
-    if (deviceRef.current) {
-      deviceRef.current.removeEventListener(
-        'gattserverdisconnected',
-        handleDisconnected
-      );
-      if (deviceRef.current.gatt?.connected) {
-        deviceRef.current.gatt.disconnect();
-      }
-      deviceRef.current = null;
-    }
-    rxBufferRef.current = '';
-    setStatus('Đã ngắt kết nối');
-    setConnectionState('inactive');
-    setDeviceInfo(null);
-    addLog("Đã ngắt kết nối BLE Stick 'Em", 'info');
-  };
-
-  const clearHistory = () => {
-    sound.playClick();
-    setDataHistory([]);
-  };
-
-  const isConnected = connectionState === 'active';
+  const isConnected = connectionState === "active";
+  const servoDisabled = !isConnected || !canWrite;
   const metaEntries = Object.entries(parsedPayload?.meta || {});
+
+  /**
+   * Gửi lệnh điều khiển Servo xuống cổng 0xFFE1 với throttle + trailing debounce (100ms)
+   * để chống nghẽn hàng đợi GATT khi người dùng kéo Slider liên tục
+   */
+  const sendServoCommand = useCallback(
+    (targetAngle, immediate = false) => {
+      const clamped = setServoAngleLocal(targetAngle);
+      const writeChar = writeCharRef.current || getWriteCharacteristic();
+      if (!isConnected || !writeChar) return;
+      writeCharRef.current = writeChar;
+
+      const THROTTLE_MS = 100;
+      const now = Date.now();
+      const elapsed = now - lastWriteTimeRef.current;
+
+      if (trailingTimerRef.current) {
+        clearTimeout(trailingTimerRef.current);
+        trailingTimerRef.current = null;
+      }
+
+      if (immediate || elapsed >= THROTTLE_MS) {
+        lastWriteTimeRef.current = now;
+        pendingAngleRef.current = null;
+        dispatchServoWrite(
+          clamped,
+          writeChar,
+          servoFormat,
+          addLog,
+          servoChannel,
+        );
+      } else {
+        pendingAngleRef.current = clamped;
+        trailingTimerRef.current = setTimeout(() => {
+          const finalAngle = pendingAngleRef.current;
+          pendingAngleRef.current = null;
+          const activeChar = writeCharRef.current || getWriteCharacteristic();
+          if (finalAngle !== null && activeChar) {
+            lastWriteTimeRef.current = Date.now();
+            dispatchServoWrite(
+              finalAngle,
+              activeChar,
+              servoFormat,
+              addLog,
+              servoChannel,
+            );
+          }
+        }, THROTTLE_MS - elapsed);
+      }
+    },
+    [
+      isConnected,
+      servoFormat,
+      servoChannel,
+      getWriteCharacteristic,
+      setServoAngleLocal,
+      dispatchServoWrite,
+      addLog,
+    ],
+  );
+
+  const handleConnect = async () => {
+    const wChar = await connectDevice(addLog);
+    if (wChar) {
+      writeCharRef.current = wChar;
+    }
+  };
+
+  const handleDisconnect = () => {
+    writeCharRef.current = null;
+    disconnectDevice(addLog);
+  };
+
+  const handleStepServo = (delta) => {
+    if (servoDisabled) return;
+    sound.playClick();
+    sendServoCommand(servoAngle + delta, true);
+  };
+
+  const handlePresetServo = (presetAngle) => {
+    if (servoDisabled) return;
+    sound.playClick();
+    sendServoCommand(presetAngle, true);
+  };
+
+  const handleSendCustom = (e) => {
+    e.preventDefault();
+    const activeChar = writeCharRef.current || getWriteCharacteristic();
+    if (servoDisabled || !customCmd.trim() || !activeChar) return;
+    sendTextCommand(customCmd.trim(), appendNewlineOnWrite, activeChar, addLog);
+  };
+
+  const handleProbeServo = () => {
+    const activeChar = writeCharRef.current || getWriteCharacteristic();
+    if (servoDisabled || !activeChar) return;
+    sound.playClick();
+    probeServoFormats(servoAngle, activeChar, addLog);
+  };
+
+  const statusLightClass =
+    connectionState === "active"
+      ? "dot-connected"
+      : connectionState === "warning"
+        ? "dot-connecting"
+        : connectionState === "danger"
+          ? "dot-error"
+          : "dot-disconnected";
 
   return (
     <div className="ble-stickem-page animate-fade-in">
-      {/* Page Header */}
+      {/* Header + Đèn trạng thái kết nối */}
       <div className="ble-page-header">
         <div>
-          <h1 className="page-title">Bộ Giám Sát Stick 'Em (BLE)</h1>
+          <h1 className="page-title">
+            Điều Khiển &amp; Giám Sát BLE Stick 'Em
+          </h1>
           <p className="page-subtitle">
-            Giải mã trực quan dữ liệu cảm biến thời gian thực qua Web Bluetooth GATT
+            Kết nối trực tiếp kit Stick &apos;Em (&quot;Chiendeptry&quot;) qua
+            Service 0xFFE0 • Write 0xFFE1 • Notify 0xFFE2
           </p>
         </div>
-        <StatusBadge status={connectionState} text={status} size="md" />
+
+        <div className={`ble-status-lamp ${connectionState}`}>
+          <span className={`lamp-dot ${statusLightClass}`}></span>
+          <span className="lamp-text">{status}</span>
+        </div>
       </div>
 
       {!isWebBluetoothSupported() && (
@@ -222,21 +258,34 @@ export const BleStickEmPage = () => {
           <AlertTriangle size={20} className="warning-icon" />
           <div>
             <strong>Trình duyệt chưa hỗ trợ Web Bluetooth API.</strong>
-            <p>Vui lòng mở bằng Google Chrome hoặc Microsoft Edge qua localhost hoặc HTTPS.</p>
+            <p>
+              Vui lòng dùng Google Chrome hoặc Microsoft Edge trên localhost
+              hoặc HTTPS.
+            </p>
           </div>
         </div>
       )}
 
-      {/* Compact Connection & Device Info Bar */}
+      {/* Thẻ Kết Nối & Bộ Lọc BLE */}
       <div className="ble-control-card glass-panel">
         <div className="ble-control-top">
           <div className="ble-device-summary">
-            <div className={`ble-icon-circle ${isConnected ? 'connected' : ''}`}>
-              {isConnected ? <BluetoothConnected size={24} /> : <Bluetooth size={24} />}
+            <div
+              className={`ble-icon-circle ${isConnected ? "connected" : ""}`}
+            >
+              {isConnected ? (
+                <BluetoothConnected size={24} />
+              ) : (
+                <Bluetooth size={24} />
+              )}
             </div>
             <div>
               <div className="device-title-row">
-                <h3>{deviceInfo ? deviceInfo.name : "Chưa kết nối kit Stick 'Em"}</h3>
+                <h3>
+                  {deviceInfo
+                    ? deviceInfo.name
+                    : "Stick 'Em Robot Board (Tự lọc Bluetooth Stick 'Em)"}
+                </h3>
                 {metaEntries.map(([k, v]) => (
                   <span key={k} className="meta-pill">
                     {k}: <strong>{String(v)}</strong>
@@ -244,56 +293,391 @@ export const BleStickEmPage = () => {
                 ))}
               </div>
               <p className="ble-uuid-meta">
-                GATT Service <code>0xFFE0</code> • Notify <code>0xFFE2</code>
+                Service <code>0xFFE0</code> • Write{" "}
+                <code>
+                  0x{(writeCharUuid || "").slice(4, 8).toUpperCase() || "FFE1"}
+                </code>{" "}
+                • Notify <code>0xFFE2</code>
               </p>
             </div>
           </div>
 
           <div className="ble-action-buttons">
-            <button className="btn-ble-connect" onClick={connectDevice}>
+            <button className="btn-ble-connect" onClick={handleConnect}>
               <Radio size={16} />
-              {isConnected ? 'Đổi Thiết Bị' : 'Kết Nối Thiết Bị'}
+              {isConnected ? "Đổi Board Stick 'Em" : "Kết Nối Stick 'Em"}
             </button>
 
             {isConnected && (
-              <button className="btn-ble-disconnect" onClick={disconnectDevice}>
+              <button className="btn-ble-disconnect" onClick={handleDisconnect}>
                 <BluetoothOff size={16} />
                 Ngắt Kết Nối
               </button>
             )}
           </div>
         </div>
-      </div>
 
-      {/* Clean Parsed Sensor Cards */}
-      <div className="ble-sensors-section">
-        <div className="section-heading-row">
-          <h3>Thông Số Cảm Biến Trực Tiếp</h3>
-          <span className="sensor-count-hint">
-            {parsedPayload?.isJson
-              ? `${parsedPayload.sensors.length} cảm biến đang nhận`
-              : 'Đang chờ khung dữ liệu JSON'}
-          </span>
+        <div className="ble-filter-toolbar">
+          <div className="filter-mode-group">
+            <span className="filter-label">
+              Chỉ hiển thị thiết bị Stick &apos;Em khi quét, ẩn các thiết bị
+              Bluetooth khác).
+            </span>
+          </div>
+
+          <ToggleSwitch
+            size="sm"
+            checked={syncToDashboard}
+            onChange={(val) => setSyncToDashboard(val)}
+            label="Đồng bộ Nhiệt độ/Độ ẩm lên Dashboard"
+          />
         </div>
 
-        {!parsedPayload ? (
-          <div className="ble-empty-sensors glass-panel">
-            <Activity size={28} className="empty-icon" />
-            <div>
-              <h4>Chưa có dữ liệu cảm biến</h4>
-              <p>Bấm &quot;Kết Nối Thiết Bị&quot; và chọn kit Stick &apos;Em để hiển thị thông số trực quan tại đây.</p>
+        {gattCharacteristics.length > 0 && (
+          <div className="ble-filter-toolbar" style={{ paddingTop: 10 }}>
+            <div className="filter-mode-group">
+              <span className="filter-label">Cổng ghi BLE:</span>
+              {gattCharacteristics
+                .filter((c) => c.canWrite)
+                .map((c) => (
+                  <button
+                    key={c.uuid}
+                    type="button"
+                    className={`filter-pill-btn ${writeCharUuid === c.uuid ? "active" : ""}`}
+                    onClick={() => setActiveWriteCharacteristic(c.uuid)}
+                  >
+                    {c.shortUuid} [{c.caps.join("/")}]
+                  </button>
+                ))}
+              <span className="filter-label" style={{ marginLeft: 8 }}>
+                Kiểu ghi:
+              </span>
+              <button
+                type="button"
+                className={`filter-pill-btn ${writeMode === "auto" ? "active" : ""}`}
+                onClick={() => setWriteMode("auto")}
+              >
+                WithResponse (Chuẩn)
+              </button>
+              <button
+                type="button"
+                className={`filter-pill-btn ${writeMode === "withoutResponse" ? "active" : ""}`}
+                onClick={() => setWriteMode("withoutResponse")}
+              >
+                NoResponse
+              </button>
             </div>
           </div>
-        ) : parsedPayload.isJson && parsedPayload.sensors.length > 0 ? (
+        )}
+      </div>
+
+      {/* Bảng Tự Động Dò Chân & Cụm Nút Di Chuyển/Xoay (kiểu control.stickem.sg) */}
+      <StickEmMotionPad
+        disabled={servoDisabled}
+        isConnected={isConnected}
+        selectedPortNum={selectedPortNum}
+        probingPortNum={probingPortNum}
+        isProbingPort={isProbingPort}
+        speedLevel={speedLevel}
+        snapBack={snapBack}
+        eightPorts={eightPorts}
+        driveConfig={driveConfig}
+        activeDriveAction={activeDriveAction}
+        onSelectPort={(p) => setSelectedPortNum(p)}
+        onAutoDetectPort={() => autoDetectActivePort(addLog)}
+        onStopProbe={stopPortProbe}
+        onConfirmPort={(p) => confirmDetectedPort(p, addLog)}
+        onScanSensors={() => scanPluggedPorts(addLog)}
+        onChangeSpeed={(lvl) => setSpeedLevel(lvl)}
+        onToggleSnapBack={(val) => setSnapBack(val)}
+        onUpdateDriveConfig={(cfg) => setDriveConfig(cfg)}
+        onRotatePort={(p, dir) => rotatePort(p, dir, null, addLog)}
+        onSendPortAngle={(p, ang) => sendPortCommand(p, ang, null, addLog)}
+        onDrive={(act) => driveRobot(act, addLog)}
+        onStopAll={() => stopAllPorts(addLog)}
+      />
+
+      {/* Dashboard Card Bố Cục Chính: Điều Khiển Servo (Trái) + 4 Thẻ Cảm Biến (Phải) */}
+      <div className="ble-main-dashboard-grid">
+        {/* Card Điều Khiển Servo (0xFFE1) */}
+        <div
+          className={`servo-control-card glass-panel ${servoDisabled ? "controls-disabled" : ""}`}
+        >
+          <div className="servo-card-head">
+            <div className="servo-title-group">
+              <div className="servo-cog-box">
+                <Cog size={20} className={!servoDisabled ? "cog-ready" : ""} />
+              </div>
+              <div>
+                <h3>Điều Khiển Góc Servo — Chân {selectedPortNum}</h3>
+                <p>
+                  {servoDisabled
+                    ? "Kết nối Bluetooth để mở khóa điều khiển"
+                    : "Sẵn sàng gửi xung PWM / lệnh tới Servo"}
+                </p>
+              </div>
+            </div>
+
+            <div className="servo-angle-readout">
+              <span className="angle-number">{servoAngle}</span>
+              <span className="angle-deg">°</span>
+            </div>
+          </div>
+
+          {/* Thanh trượt Slider 0 - 180° */}
+          <div className="servo-slider-wrap">
+            <RangeSlider
+              label="Thanh trượt góc quay (0° – 180°)"
+              min={0}
+              max={180}
+              step={1}
+              unit="°"
+              value={servoAngle}
+              onChange={(val) => sendServoCommand(val, false)}
+              disabled={servoDisabled}
+            />
+          </div>
+
+          {/* Hai nút bước nhỏ -5° và +5° + Nút cố định 0, 45, 90, 135, 180 */}
+          <div className="servo-buttons-row">
+            <button
+              type="button"
+              className="btn-servo-step"
+              onClick={() => handleStepServo(-5)}
+              disabled={servoDisabled || servoAngle <= 0}
+            >
+              <Minus size={15} /> -5°
+            </button>
+
+            <div className="servo-presets-group">
+              {SERVO_PRESETS.map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  className={`btn-servo-preset ${servoAngle === preset ? "active" : ""}`}
+                  onClick={() => handlePresetServo(preset)}
+                  disabled={servoDisabled}
+                >
+                  {preset}°
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className="btn-servo-step"
+              onClick={() => handleStepServo(5)}
+              disabled={servoDisabled || servoAngle >= 180}
+            >
+              <Plus size={15} /> +5°
+            </button>
+          </div>
+
+          {/* Chọn định dạng gói lệnh, kênh Stick 'Em & gửi lệnh tùy ý */}
+          <div className="servo-footer-tools">
+            <div className="format-selector">
+              <span className="fmt-lbl">Định dạng:</span>
+              <button
+                type="button"
+                className={`fmt-pill ${servoFormat === "stickem_mv" ? "active" : ""}`}
+                onClick={() => setServoFormat("stickem_mv")}
+                disabled={servoDisabled}
+              >
+                mv:PWM (Stick 'Em)
+              </button>
+              <button
+                type="button"
+                className={`fmt-pill ${servoFormat === "stickem_legacy" ? "active" : ""}`}
+                onClick={() => setServoFormat("stickem_legacy")}
+                disabled={servoDisabled}
+              >
+                #n,val (Legacy)
+              </button>
+              <button
+                type="button"
+                className={`fmt-pill ${servoFormat === "json_stickem" ? "active" : ""}`}
+                onClick={() => setServoFormat("json_stickem")}
+                disabled={servoDisabled}
+              >
+                {`JSON {"${servoChannel}":xx}`}
+              </button>
+              <button
+                type="button"
+                className={`fmt-pill ${servoFormat === "json" ? "active" : ""}`}
+                onClick={() => setServoFormat("json")}
+                disabled={servoDisabled}
+              >
+                {`{"servo":xx}`}
+              </button>
+              <button
+                type="button"
+                className={`fmt-pill ${servoFormat === "text" ? "active" : ""}`}
+                onClick={() => setServoFormat("text")}
+                disabled={servoDisabled}
+              >
+                SERVO:xx\n
+              </button>
+              <button
+                type="button"
+                className={`fmt-pill ${servoFormat === "bytes" ? "active" : ""}`}
+                onClick={() => setServoFormat("bytes")}
+                disabled={servoDisabled}
+              >
+                [0xFF, xx]
+              </button>
+
+              {servoFormat === "json_stickem" && (
+                <select
+                  className="servo-channel-select"
+                  value={servoChannel}
+                  onChange={(e) => setServoChannel(e.target.value)}
+                  disabled={servoDisabled}
+                  title="Chọn tên chân/cổng Servo trong firmware"
+                >
+                  <option value="Servo1">Servo1</option>
+                  <option value="Servo2">Servo2</option>
+                  <option value="Servo3">Servo3</option>
+                  <option value="Servo">Servo</option>
+                  <option value="servo">servo</option>
+                </select>
+              )}
+
+              <label
+                className="nl-checkbox-lbl"
+                title="Thêm ký tự xuống dòng \\n cuối gói tin"
+              >
+                <input
+                  type="checkbox"
+                  checked={appendNewlineOnWrite}
+                  onChange={(e) => setAppendNewlineOnWrite(e.target.checked)}
+                  disabled={servoDisabled}
+                />
+                <span>+\n</span>
+              </label>
+            </div>
+
+            <div className="servo-extra-actions">
+              <button
+                type="button"
+                className="btn-probe-servo"
+                onClick={handleProbeServo}
+                disabled={servoDisabled}
+                title="Tự động thử gửi các kiểu lệnh Servo (mv:, Legacy, JSON, Text) để xem kit phản ứng"
+              >
+                <Zap size={14} /> Dò Định Dạng
+              </button>
+
+              <form className="custom-write-form" onSubmit={handleSendCustom}>
+                <input
+                  type="text"
+                  className="custom-cmd-input"
+                  value={customCmd}
+                  onChange={(e) => setCustomCmd(e.target.value)}
+                  placeholder="vd: mv:1850:-:-:-:-:-:-:-:-, hoặc scanAll,"
+                  disabled={servoDisabled}
+                />
+                <button
+                  type="submit"
+                  className="btn-send-cmd"
+                  disabled={servoDisabled || !customCmd.trim()}
+                >
+                  <Send size={14} /> Gửi
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        {/* 4 Thẻ Card Cảm Biến (0xFFE2) */}
+        <div className="sensors-4cards-grid">
+          <div className="port-card glass-panel temp">
+            <div className="sensor-card-top">
+              <span className="sensor-label">Nhiệt Độ</span>
+              <div className="sensor-icon-wrap temp">
+                <Thermometer size={18} />
+              </div>
+            </div>
+            <div className="port-value-display">{portsData.temperature}</div>
+            <span className="port-key-hint">TEMP / temp</span>
+          </div>
+
+          <div className="port-card glass-panel hum">
+            <div className="sensor-card-top">
+              <span className="sensor-label">Độ Ẩm</span>
+              <div className="sensor-icon-wrap hum">
+                <Droplets size={18} />
+              </div>
+            </div>
+            <div className="port-value-display">{portsData.humidity}</div>
+            <span className="port-key-hint">HUMI / humi</span>
+          </div>
+
+          <div className="port-card glass-panel light">
+            <div className="sensor-card-top">
+              <span className="sensor-label">Cảm Biến Analog / Quang</span>
+              <div className="sensor-icon-wrap light">
+                <Sun size={18} />
+              </div>
+            </div>
+            <div className="port-value-display">{portsData.analogSensor}</div>
+            <span className="port-key-hint">A0 / LIGHT</span>
+          </div>
+
+          <div className="port-card glass-panel servo">
+            <div className="sensor-card-top">
+              <span className="sensor-label">Góc Servo Phản Hồi</span>
+              <div className="sensor-icon-wrap servo">
+                <Cog size={18} />
+              </div>
+            </div>
+            <div className="port-value-display">{portsData.servoAngle}</div>
+            <span className="port-key-hint">SERVO / servo (từ kit)</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Bảng quét & điều khiển độc lập 8 chân cắm (Chân 1 .. Chân 8) */}
+      <EightPortControlGrid
+        eightPorts={eightPorts}
+        detectedModules={detectedModules}
+        selectedPortNum={selectedPortNum}
+        probingPortNum={probingPortNum}
+        portCommandFormat={portCommandFormat}
+        isProbingPort={isProbingPort}
+        snapBack={snapBack}
+        lastScanTime={lastScanTime}
+        disabled={servoDisabled}
+        isConnected={isConnected}
+        onScanPorts={() => scanPluggedPorts(addLog)}
+        onSelectPort={(p) => setSelectedPortNum(p)}
+        onConfirmPort={(p) => confirmDetectedPort(p, addLog)}
+        onChangeFormat={(fmt) => setPortCommandFormat(fmt)}
+        onChangePortMode={(p, mode) => setPortMode(p, mode)}
+        onSendPortCommand={(p, val) => sendPortCommand(p, val, null, addLog)}
+        onRotatePort={(p, dir) => rotatePort(p, dir, null, addLog)}
+        onProbePort={(p, angle) => probePortFormats(p, angle, addLog)}
+        onStopProbe={stopPortProbe}
+      />
+
+      {/* Cảm biến mở rộng (Touch1, Touch2, Ultrasonic,...) nếu có */}
+      {parsedPayload?.sensors?.length > 0 && (
+        <div className="ble-sensors-section">
+          <div className="section-heading-row">
+            <h3>Cảm Biến Mở Rộng Stick &apos;Em</h3>
+            <span className="sensor-count-hint">
+              {parsedPayload.sensors.length} cảm biến đang nhận
+            </span>
+          </div>
+
           <div className="ble-sensors-grid">
             {parsedPayload.sensors.map((sensor) => {
-              if (sensor.type === 'touch') {
+              if (sensor.type === "touch") {
                 const isTouched = Boolean(sensor.value);
                 return (
                   <div
                     key={sensor.key}
                     className={`ble-sensor-card glass-panel touch-card ${
-                      isTouched ? 'touched' : ''
+                      isTouched ? "touched" : ""
                     }`}
                   >
                     <div className="sensor-card-top">
@@ -304,17 +688,22 @@ export const BleStickEmPage = () => {
                     </div>
                     <div className="touch-state-display">
                       <span className="touch-badge">
-                        {isTouched ? 'ĐANG CHẠM' : 'CHƯA CHẠM'}
+                        {isTouched ? "ĐANG CHẠM" : "CHƯA CHẠM"}
                       </span>
-                      <span className="sensor-raw-num">Giá trị: {String(sensor.value)}</span>
+                      <span className="sensor-raw-num">
+                        Giá trị: {String(sensor.value)}
+                      </span>
                     </div>
                   </div>
                 );
               }
 
-              if (sensor.type === 'distance') {
+              if (sensor.type === "distance") {
                 const numericVal = Number(sensor.value) || 0;
-                const pct = Math.min(100, Math.max(0, (numericVal / sensor.max) * 100));
+                const pct = Math.min(
+                  100,
+                  Math.max(0, (numericVal / sensor.max) * 100),
+                );
                 return (
                   <div
                     key={sensor.key}
@@ -349,92 +738,68 @@ export const BleStickEmPage = () => {
                     </div>
                   </div>
                   <div className="distance-value-row">
-                    <span className="sensor-big-val">{String(sensor.value)}</span>
-                    {sensor.unit && <span className="sensor-unit">{sensor.unit}</span>}
+                    <span className="sensor-big-val">
+                      {String(sensor.value)}
+                    </span>
+                    {sensor.unit && (
+                      <span className="sensor-unit">{sensor.unit}</span>
+                    )}
                   </div>
                 </div>
               );
             })}
           </div>
-        ) : (
-          <div className="ble-plain-card glass-panel">
-            <span className="plain-label">Dữ liệu văn bản thô</span>
-            <p className="plain-value">{rawData}</p>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Tabbed Log & Raw Inspector Panel */}
+      {/* Ô Dữ liệu thô + Khung Log Terminal nhỏ ở chân trang (15 bản tin gần nhất) */}
       <div className="ble-inspector-card glass-panel">
-        <div className="inspector-topbar">
-          <div className="inspector-tabs">
-            <button
-              className={`inspector-tab-btn ${activeTab === 'log' ? 'active' : ''}`}
-              onClick={() => setActiveTab('log')}
-            >
-              <Terminal size={15} />
-              Nhật Ký Gói Tin ({dataHistory.length})
-            </button>
-            <button
-              className={`inspector-tab-btn ${activeTab === 'raw' ? 'active' : ''}`}
-              onClick={() => setActiveTab('raw')}
-            >
-              <Code2 size={15} />
-              JSON &amp; Mã Hex Thô
-            </button>
+        <div className="raw-data-box">
+          <div className="raw-data-row">
+            <span className="raw-inline-label">Dữ liệu thô:</span>
+            <code className="raw-inline-code">
+              {unparsedRawText || rawData || "Chưa có dữ liệu"}
+            </code>
           </div>
-
-          {activeTab === 'log' && (
-            <div className="log-controls">
-              <button
-                className={`btn-log-ctrl ${isLogPaused ? 'paused' : ''}`}
-                onClick={() => setIsLogPaused(!isLogPaused)}
-              >
-                {isLogPaused ? <Play size={13} /> : <Pause size={13} />}
-                {isLogPaused ? 'Tiếp tục' : 'Tạm dừng'}
-              </button>
-              <button
-                className="btn-log-ctrl clear"
-                onClick={clearHistory}
-                disabled={dataHistory.length === 0}
-              >
-                <Trash2 size={13} /> Xóa
-              </button>
+          {hexData && (
+            <div className="raw-data-row hex-subrow">
+              <span className="raw-inline-label">Hex thô:</span>
+              <code className="raw-hex-code">{hexData}</code>
             </div>
           )}
         </div>
 
-        {activeTab === 'log' ? (
-          <div className="ble-log-terminal">
-            {dataHistory.length === 0 ? (
-              <div className="ble-log-empty">Chưa có gói tin nào được ghi nhận</div>
-            ) : (
-              dataHistory.map((item) => (
-                <div key={item.id} className="ble-log-line">
-                  <span className="ble-log-time">[{item.time}]</span>
-                  <span className="ble-log-summary">{item.summary}</span>
-                </div>
-              ))
-            )}
+        <div className="inspector-topbar">
+          <div className="log-footer-title">
+            <Terminal size={16} className="log-term-icon" />
+            <span>Nhật Ký Giao Tiếp BLE (15 bản tin nhận/gửi gần nhất)</span>
           </div>
-        ) : (
-          <div className="raw-inspector-grid">
-            <div className="raw-pane">
-              <span className="raw-pane-title">JSON Định Dạng Chuẩn (UTF-8)</span>
-              <pre className="raw-code-box json">
-                {parsedPayload?.isJson
-                  ? JSON.stringify(parsedPayload.rawObject, null, 2)
-                  : rawData || 'Chưa có dữ liệu'}
-              </pre>
-            </div>
-            <div className="raw-pane">
-              <span className="raw-pane-title">Mã Hex Byte Thô (Raw Frame)</span>
-              <pre className="raw-code-box hex">
-                {hexData || 'Chưa có dữ liệu Hex'}
-              </pre>
-            </div>
-          </div>
-        )}
+
+          <button
+            type="button"
+            className="btn-log-ctrl clear"
+            onClick={clearHistory}
+            disabled={terminalLogs.length === 0}
+          >
+            <Trash2 size={13} /> Xóa Log
+          </button>
+        </div>
+
+        <div className="ble-log-terminal compact">
+          {terminalLogs.length === 0 ? (
+            <div className="ble-log-empty">Chưa có bản tin nhận/gửi nào</div>
+          ) : (
+            terminalLogs.map((item) => (
+              <div key={item.id} className="ble-log-line">
+                <span className="ble-log-time">[{item.time}]</span>
+                <span className={`ble-dir-badge dir-${item.dir.toLowerCase()}`}>
+                  {item.dir}
+                </span>
+                <span className="ble-log-summary">{item.message}</span>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

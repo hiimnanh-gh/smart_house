@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from '../components/layout/MainLayout';
 
@@ -14,6 +14,9 @@ import { AutomationPage } from '../features/automation/AutomationPage';
 import { IotDebugPage } from '../features/iot-debug/IotDebugPage';
 import { SettingsPage } from '../features/settings/SettingsPage';
 import { BleStickEmPage } from '../features/ble-stickem/BleStickEmPage';
+import { BleInspectorPage } from '../features/ble-inspector/BleInspectorPage';
+
+const BleReportPage = lazy(() => import('../features/ble-report/BleReportPage'));
 
 export const AppRoutes = () => {
   return (
@@ -29,6 +32,15 @@ export const AppRoutes = () => {
         <Route path="automation" element={<AutomationPage />} />
         <Route path="iot-debug" element={<IotDebugPage />} />
         <Route path="ble-scanner" element={<BleStickEmPage />} />
+        <Route path="ble-inspector" element={<BleInspectorPage />} />
+        <Route
+          path="ble-report"
+          element={
+            <Suspense fallback={null}>
+              <BleReportPage />
+            </Suspense>
+          }
+        />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

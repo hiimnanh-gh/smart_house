@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { iotBridge } from '../services/iotBridgeService';
+import { bleStickEmStore } from '../features/ble-stickem/bleStickEmService';
 
 const SmartHomeContext = createContext();
 
@@ -159,6 +160,23 @@ export const SmartHomeProvider = ({ children }) => {
     });
 
     return () => unsubscribe();
+  }, []);
+
+  // Đồng bộ nhiệt độ / độ ẩm từ cảm biến BLE (Stick 'Em / Chiendeptry) lên Dashboard
+  useEffect(() => {
+    bleStickEmStore.setClimateSyncHandler(({ temp, hum }) => {
+      setIsSimulating(false);
+      setSensors((prev) => ({
+        ...prev,
+        livingRoom: {
+          ...prev.livingRoom,
+          temp: temp !== undefined ? temp : prev.livingRoom.temp,
+          hum: hum !== undefined ? hum : prev.livingRoom.hum,
+        },
+      }));
+    });
+
+    return () => bleStickEmStore.setClimateSyncHandler(null);
   }, []);
 
   const connectHardware = (url) => {

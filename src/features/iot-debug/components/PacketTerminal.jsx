@@ -1,10 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Terminal, Pause, Play, Trash2, Send, Download } from 'lucide-react';
+import { Terminal, Pause, Play, Trash2, Send } from 'lucide-react';
 import { INITIAL_PACKETS } from '../iotDebugService';
+import { iotBridge } from '../../../services/iotBridgeService';
 import { sound } from '../../../utils/soundEffects';
 import './PacketTerminal.css';
 
-export const PacketTerminal = ({ onSendCommand }) => {
+const formatPacketTime = () => {
+  const now = new Date();
+  return `${now.toTimeString().split(' ')[0]}.${String(now.getMilliseconds()).padStart(3, '0')}`;
+};
+
+export const PacketTerminal = ({ hardwareStatus = 'DISCONNECTED', onSendCommand }) => {
   const [packets, setPackets] = useState(INITIAL_PACKETS);
   const [isStreaming, setIsStreaming] = useState(true);
   const [inputCmd, setInputCmd] = useState('');
@@ -18,19 +24,44 @@ export const PacketTerminal = ({ onSendCommand }) => {
     }
   }, [packets, isStreaming]);
 
-  // Periodic random packet simulation
+  // Lắng nghe gói tin thật từ iotBridge (WebSocket TX/RX)
   useEffect(() => {
-    if (!isStreaming) return;
+    const unsubscribe = iotBridge.subscribe((event, data) => {
+      if (event === 'packet_rx') {
+        const pkt = {
+          id: Date.now() + Math.random(),
+          time: formatPacketTime(),
+          dir: 'RX',
+          topic: data.type ? `esp32/${data.type.toLowerCase()}` : 'esp32/ws/rx',
+          payload: typeof data === 'string' ? data : JSON.stringify(data),
+        };
+        setPackets((prev) => [...prev.slice(-40), pkt]);
+      } else if (event === 'packet_tx') {
+        const pkt = {
+          id: Date.now() + Math.random(),
+          time: formatPacketTime(),
+          dir: 'TX',
+          topic: data.simulated ? 'esp32/sim/tx' : 'esp32/ws/tx',
+          payload: JSON.stringify(data),
+        };
+        setPackets((prev) => [...prev.slice(-40), pkt]);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Periodic random packet simulation (chỉ chạy khi chưa kết nối ESP32 thật)
+  useEffect(() => {
+    if (!isStreaming || hardwareStatus === 'CONNECTED') return;
 
     const interval = setInterval(() => {
-      const now = new Date();
-      const timeStr = `${now.toTimeString().split(' ')[0]}.${String(now.getMilliseconds()).padStart(3, '0')}`;
       const tempVal = (25.5 + (Math.random() - 0.5) * 1.5).toFixed(1);
       const humVal = Math.round(60 + (Math.random() - 0.5) * 6);
 
       const newPkt = {
         id: Date.now(),
-        time: timeStr,
+        time: formatPacketTime(),
         dir: 'RX',
         topic: 'esp32/dht22/stream',
         payload: `{"temp":${tempVal},"hum":${humVal},"vcc":3.28}`,
@@ -40,26 +71,16 @@ export const PacketTerminal = ({ onSendCommand }) => {
     }, 3500);
 
     return () => clearInterval(interval);
-  }, [isStreaming]);
+  }, [isStreaming, hardwareStatus]);
 
   const handleSend = (e) => {
     e.preventDefault();
     if (!inputCmd.trim()) return;
 
     sound.playClick();
-    const now = new Date();
-    const timeStr = `${now.toTimeString().split(' ')[0]}.${String(now.getMilliseconds()).padStart(3, '0')}`;
-
-    const sentPkt = {
-      id: Date.now(),
-      time: timeStr,
-      dir: 'TX',
-      topic: 'esp32/serial/stdin',
-      payload: inputCmd.trim(),
-    };
-
-    setPackets((prev) => [...prev, sentPkt]);
-    if (onSendCommand) onSendCommand(inputCmd.trim());
+    const cmdText = inputCmd.trim();
+    iotBridge.sendCommand('RAW_CLI', 'serial', cmdText);
+    if (onSendCommand) onSendCommand(cmdText);
     setInputCmd('');
   };
 
@@ -73,7 +94,7 @@ export const PacketTerminal = ({ onSendCommand }) => {
       <div className="terminal-topbar">
         <div className="topbar-left">
           <Terminal size={18} className="terminal-green-icon" />
-          <span className="terminal-title">Serial / MQTT Stream Console</span>
+          <span className="terminal-title">Serial / WebSocket Stream Console</span>
           <span className="baud-tag">{baudRate} 8-N-1</span>
         </div>
 
@@ -133,4 +154,3 @@ export const PacketTerminal = ({ onSendCommand }) => {
     </div>
   );
 };
-

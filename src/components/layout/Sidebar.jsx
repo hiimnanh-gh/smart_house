@@ -11,6 +11,8 @@ import {
   Cpu,
   Terminal,
   Bluetooth,
+  FileSearch,
+  FileCode2,
   Settings,
   Home,
   Wifi,
@@ -28,6 +30,8 @@ const navItems = [
   { to: '/automation', label: 'Tự Động & Hẹn Giờ', icon: Cpu },
   { to: '/iot-debug', label: 'Kiểm Thử Nhúng ESP32', icon: Terminal },
   { to: '/ble-scanner', label: "Giám Sát BLE Stick 'Em", icon: Bluetooth },
+  { to: '/ble-inspector', label: 'Kiểm Tra Dữ Liệu Truyền Lên', icon: FileSearch },
+  { to: '/ble-report', label: 'Báo Cáo Chức Năng & Code', icon: FileCode2 },
   { to: '/settings', label: 'Cấu Hình & Gateway', icon: Settings },
 ];
 
