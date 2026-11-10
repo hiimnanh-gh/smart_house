@@ -133,8 +133,10 @@ export const BleStickEmPage = () => {
       rxBufferRef.current = '';
 
       const device = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true,
-        optionalServices: [BLE_CONFIG.SERVICE_UUID],
+        filters: [
+          { services: [BLE_CONFIG.SERVICE_UUID] },
+        ],
+        // Khi đã đưa UUID vào filter 'services', không cần khai báo lại ở optionalServices
       });
 
       deviceRef.current = device;
