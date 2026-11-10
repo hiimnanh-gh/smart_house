@@ -13,6 +13,7 @@ import { AnalyticsPage } from '../features/analytics/AnalyticsPage';
 import { AutomationPage } from '../features/automation/AutomationPage';
 import { IotDebugPage } from '../features/iot-debug/IotDebugPage';
 import { SettingsPage } from '../features/settings/SettingsPage';
+import { BleStickEmPage } from '../features/ble-stickem/BleStickEmPage';
 
 export const AppRoutes = () => {
   return (
@@ -27,6 +28,7 @@ export const AppRoutes = () => {
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="automation" element={<AutomationPage />} />
         <Route path="iot-debug" element={<IotDebugPage />} />
+        <Route path="ble-scanner" element={<BleStickEmPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

@@ -99,6 +99,12 @@ export const SmartHomeProvider = ({ children }) => {
   const [activeScene, setActiveScene] = useState('scene-home');
   const [isSimulating, setIsSimulating] = useState(true);
   const [hardwareStatus, setHardwareStatus] = useState('DISCONNECTED');
+  const [hardwareMeta, setHardwareMeta] = useState({
+    url: 'ws://192.168.1.120:81',
+    rssi: -58,
+    freeHeap: 284,
+    node: 'ESP32_LIVING_ROOM',
+  });
   const [logs, setLogs] = useState([
     { id: 1, time: '14:38:12', text: 'Hệ thống khởi động thành công', type: 'info' },
     { id: 2, time: '14:35:00', text: 'Nhiệt độ phòng khách duy trì ổn định ở 26.4°C', type: 'success' },
@@ -110,17 +116,42 @@ export const SmartHomeProvider = ({ children }) => {
     const unsubscribe = iotBridge.subscribe((event, data) => {
       if (event === 'status_change') {
         setHardwareStatus(data.status);
+        if (data.url) {
+          setHardwareMeta((prev) => ({ ...prev, url: data.url }));
+        }
       } else if (event === 'packet_rx') {
-        if (data.type === 'TELEMETRY' && data.temp) {
+        if (data.type === 'TELEMETRY' && data.temp !== undefined) {
           setSensors((prev) => ({
             ...prev,
             livingRoom: {
               ...prev.livingRoom,
               temp: data.temp,
-              hum: data.hum,
+              hum: data.hum ?? prev.livingRoom.hum,
             },
           }));
+          setHardwareMeta((prev) => ({
+            ...prev,
+            rssi: data.rssi ?? prev.rssi,
+            freeHeap: data.freeHeap ? Math.round(data.freeHeap / 1024) : prev.freeHeap,
+            node: data.node ?? prev.node,
+          }));
           addLog(`Nhận cảm biến từ ESP32 thực tế: ${data.temp}°C, ${data.hum}%`, 'success');
+        } else if (data.type === 'INIT_STATE') {
+          if (typeof data.lightState === 'boolean') {
+            setLights((prev) =>
+              prev.map((l) => (l.id === 'light-1' ? { ...l, isOn: data.lightState } : l))
+            );
+          }
+          if (typeof data.fanState === 'boolean') {
+            setClimate((prev) => ({
+              ...prev,
+              livingFan: { ...prev.livingFan, isOn: data.fanState },
+            }));
+          }
+          if (typeof data.sirenState === 'boolean') {
+            setSecurity((prev) => ({ ...prev, siren: data.sirenState }));
+          }
+          addLog('Đã đồng bộ trạng thái GPIO ban đầu từ ESP32', 'info');
         }
       } else if (event === 'log') {
         addLog(data.text, data.type);
@@ -129,6 +160,15 @@ export const SmartHomeProvider = ({ children }) => {
 
     return () => unsubscribe();
   }, []);
+
+  const connectHardware = (url) => {
+    setIsSimulating(false);
+    iotBridge.connect(url);
+  };
+
+  const disconnectHardware = () => {
+    iotBridge.disconnect();
+  };
 
   // Persist to localStorage
   useEffect(() => {
@@ -199,6 +239,7 @@ export const SmartHomeProvider = ({ children }) => {
         if (l.id === id) {
           const newState = !l.isOn;
           addLog(`Đèn "${l.name}" vừa ${newState ? 'bật' : 'tắt'}`, newState ? 'success' : 'info');
+          iotBridge.sendCommand('TOGGLE_LIGHT', id, newState);
           return { ...l, isOn: newState };
         }
         return l;
@@ -242,6 +283,7 @@ export const SmartHomeProvider = ({ children }) => {
       const currentState = prev[zone]?.isOn;
       const newState = !currentState;
       addLog(`Thiết bị làm mát (${zone}) đã ${newState ? 'bật' : 'tắt'}`, 'info');
+      iotBridge.sendCommand('TOGGLE_FAN', zone, newState);
       return {
         ...prev,
         [zone]: {
@@ -299,6 +341,7 @@ export const SmartHomeProvider = ({ children }) => {
         if (door.id === doorId) {
           const nextState = !door.isLocked;
           addLog(`${door.name} vừa được ${nextState ? 'KHÓA CHỐT' : 'MỞ KHÓA'}`, nextState ? 'security' : 'warning');
+          iotBridge.sendCommand('DOOR_LOCK', doorId, nextState);
           return {
             ...door,
             isLocked: nextState,
@@ -323,6 +366,7 @@ export const SmartHomeProvider = ({ children }) => {
     setSecurity((prev) => {
       const nextSiren = !prev.siren;
       addLog(nextSiren ? 'CÒI BÁO ĐỘNG KHẨN CẤP ĐÃ ĐƯỢC KÍCH HOẠT!' : 'Đã tắt còi báo động', nextSiren ? 'danger' : 'info');
+      iotBridge.sendCommand('ALARM_SIREN', 'buzzer', nextSiren);
       return {
         ...prev,
         siren: nextSiren,
@@ -392,6 +436,10 @@ export const SmartHomeProvider = ({ children }) => {
         logs,
         isSimulating,
         setIsSimulating,
+        hardwareStatus,
+        hardwareMeta,
+        connectHardware,
+        disconnectHardware,
         toggleLight,
         updateLightBrightness,
         updateLightColor,

@@ -10,6 +10,7 @@ import {
   LineChart,
   Cpu,
   Terminal,
+  Bluetooth,
   Settings,
   Home,
   Wifi,
@@ -26,6 +27,7 @@ const navItems = [
   { to: '/analytics', label: 'Phân Tích & Solar', icon: LineChart },
   { to: '/automation', label: 'Tự Động & Hẹn Giờ', icon: Cpu },
   { to: '/iot-debug', label: 'Kiểm Thử Nhúng ESP32', icon: Terminal },
+  { to: '/ble-scanner', label: "Giám Sát BLE Stick 'Em", icon: Bluetooth },
   { to: '/settings', label: 'Cấu Hình & Gateway', icon: Settings },
 ];
 

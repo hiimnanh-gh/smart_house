@@ -9,6 +9,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .header-meta {
@@ -32,6 +34,39 @@
   color: var(--text-dim);
 }
 
+.cam-global-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-cam-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+}
+
+.btn-cam-filter:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.btn-cam-filter.active {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: #38bdf8;
+  color: #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+}
+
 .cameras-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -45,6 +80,17 @@
   overflow: hidden;
   border: 1px solid var(--border-subtle);
   background: #090d16;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.camera-frame:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.camera-frame.highlighted-cam {
+  border-color: rgba(56, 189, 248, 0.6);
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.2);
 }
 
 .camera-screen {
@@ -56,6 +102,26 @@
   justify-content: space-between;
   padding: 10px;
   overflow: hidden;
+  transition: filter 0.3s ease, background 0.3s ease;
+}
+
+/* Night Vision Infrared Mode */
+.night-vision-mode .camera-screen {
+  background: radial-gradient(circle at center, #0a2e16 0%, #031207 100%);
+  filter: contrast(1.15) saturate(1.2);
+}
+
+.night-vision-mode .cam-name-badge,
+.night-vision-mode .cam-time {
+  color: #4ade80;
+}
+
+.night-vision-mode .cam-target-box {
+  border-color: rgba(74, 222, 128, 0.45);
+}
+
+.night-vision-mode .cam-target-box::after {
+  color: rgba(74, 222, 128, 0.6);
 }
 
 .camera-screen::before {
@@ -64,12 +130,13 @@
   inset: 0;
   background: repeating-linear-gradient(
     0deg,
-    rgba(0, 0, 0, 0.15),
-    rgba(0, 0, 0, 0.15) 1px,
+    rgba(0, 0, 0, 0.18),
+    rgba(0, 0, 0, 0.18) 1px,
     transparent 1px,
     transparent 2px
   );
   pointer-events: none;
+  z-index: 1;
 }
 
 .camera-overlay-top,
@@ -77,15 +144,32 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  z-index: 2;
+  z-index: 3;
+}
+
+.top-right-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .cam-name-badge {
   font-size: 0.72rem;
   font-weight: 700;
   color: #ffffff;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.65);
   padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.ai-edge-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  padding: 2px 6px;
   border-radius: 4px;
 }
 
@@ -96,7 +180,7 @@
   font-size: 0.68rem;
   font-weight: 700;
   color: #fb7185;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.65);
   padding: 2px 8px;
   border-radius: 4px;
 }
@@ -111,12 +195,74 @@
   to { opacity: 0.2; }
 }
 
+/* AI Bounding Boxes Simulation */
+.ai-bounding-box {
+  position: absolute;
+  border: 2px solid #10b981;
+  background: rgba(16, 185, 129, 0.08);
+  border-radius: 3px;
+  z-index: 2;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.35);
+}
+
+.ai-bounding-box.person-box {
+  width: 68px;
+  height: 92px;
+  bottom: 22%;
+  left: 24%;
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
+  animation: aiTrackMove 6s infinite alternate ease-in-out;
+}
+
+.ai-bounding-box.pet-box {
+  width: 58px;
+  height: 44px;
+  bottom: 18%;
+  right: 22%;
+  border-color: #fbbf24;
+  background: rgba(251, 191, 36, 0.08);
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.35);
+  animation: aiPetMove 5s infinite alternate ease-in-out;
+}
+
+.ai-tag {
+  position: absolute;
+  top: -18px;
+  left: -2px;
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  white-space: nowrap;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: #38bdf8;
+  color: #0b0f19;
+}
+
+.pet-box .ai-tag {
+  background: #fbbf24;
+}
+
+@keyframes aiTrackMove {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(16px, -4px); }
+  100% { transform: translate(6px, 2px); }
+}
+
+@keyframes aiPetMove {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(-18px, -3px); }
+}
+
 .cam-target-box {
   width: 50px;
   height: 50px;
   border: 1px dashed rgba(56, 189, 248, 0.4);
   align-self: center;
   position: relative;
+  z-index: 2;
 }
 
 .cam-target-box::after {
@@ -133,15 +279,21 @@
   font-family: var(--font-mono);
   font-size: 0.68rem;
   color: #94a3b8;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.65);
   padding: 2px 6px;
   border-radius: 4px;
 }
 
-.cam-expand-btn {
+.bottom-btns {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cam-mini-btn {
   color: #ffffff;
   padding: 4px;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.65);
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -149,7 +301,7 @@
   transition: all var(--transition-fast);
 }
 
-.cam-expand-btn:hover {
+.cam-mini-btn:hover {
   background: var(--primary);
   color: #0b0f19;
 }
@@ -171,4 +323,3 @@
   color: #38bdf8;
   font-weight: 600;
 }
-
